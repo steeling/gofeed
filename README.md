@@ -1,6 +1,10 @@
 # Go Feed
 
-Go Feed is a queue scheduling system, built on top of a relational database. Taking inspirations from Cosmos DB's [Change Feed Processor](https://docs.microsoft.com/en-us/azure/cosmos-db/change-feed-processor), Go Feed provides the benefits of a queryable, persistant storage system on top of a Queue. It improves upon the Change Feed by adding built-in error handling and retry mechanisms, a flexible interface for processing work, and [Checkpointing](#checkpointing)
+Go Feed is a queue scheduling system, built on top of a relational database. Taking inspirations from Cosmos DB's
+[Change Feed Processor](https://docs.microsoft.com/en-us/azure/cosmos-db/change-feed-processor), Go Feed provides the
+benefits of a queryable, persistant storage system on top of a Queue. It improves upon the Change Feed by adding
+built-in error handling and retry mechanisms, a flexible interface for processing work, and
+[Checkpointing](#checkpointing)
 
 The state processor is a distributed, sharded (work-stealing) change feed that constantly polls the database for
 available work.
@@ -107,8 +111,9 @@ There are a few caveats to consider when using the State Processor.
 incrementing checkpoints.
 
 WARNING: Since AutoClose defaults to false, if you are not closing out your partitions, you need to be careful of memory
-pressure, since we don't limit the number of results from GetAvailablePartitions. This can also be alleviated by creating
-more watchers, since they will steal each others leases, and them from showing up in results for other processors.
+pressure, since we don't limit the number of results from GetAvailablePartitions. This can also be alleviated by
+creating more watchers, since they will steal each others leases, and them from showing up in results for other
+processors.
 
 ## Optimistic Concurrency Control
 
