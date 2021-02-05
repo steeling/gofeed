@@ -1,7 +1,6 @@
-# State Processor
+# Go Feed
 
-The state processor, taking inspirations from Cosmos DB's [Change Feed Processor](https://docs.microsoft.com/en-us/azure/cosmos-db/change-feed-processor),
-is better suited to handle changes that require work Fan Out/Fan In work scheduling, and better error handling.
+Go Feed is a queue scheduling system, built on top of a relational database. Taking inspirations from Cosmos DB's [Change Feed Processor](https://docs.microsoft.com/en-us/azure/cosmos-db/change-feed-processor), Go Feed provides the benefits of a queryable, persistant storage system on top of a Queue. It improves upon the Change Feed by adding built-in error handling and retry mechanisms, a flexible interface for processing work, and [Checkpointing](#checkpointing)
 
 The state processor is a distributed, sharded (work-stealing) change feed that constantly polls the database for
 available work.
@@ -84,9 +83,9 @@ partition, which grants "ownership" to this instance of the state partition, whi
 Since processor's are constantly trying to lease partitions, multiple processor's may attempt to lease the same
 partition, or even "steal" a partition from another.
 
-### Partition fan/out fan/in
+### Checkpointing
 
-Partitions enable the fan out mechanism by introducing the concept of a `gate`. The main query polling for states
+Partitions enable checkpointing by introducing the concept of a `gate`. The main query polling for states
 queries based on the current partitions `gate` field. If no states are found, we trigger a method that checks if we
 should close a partition, by checking the count of states grouped by `status`, and trigger the checks mentioned above
 for closing out a partition. If states are found in "available", but none in failed, this means we can increment the
