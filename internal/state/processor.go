@@ -8,7 +8,7 @@ import (
 // Processor is the interface that is used to process
 // new items.
 type Processor interface {
-	Process(b []byte) (*ProcessorResponse, error)
+	Process(id string, b []byte) (*ProcessorResponse, error)
 	Healthcheck(ctx context.Context) error
 }
 

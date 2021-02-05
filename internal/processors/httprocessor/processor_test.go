@@ -108,7 +108,7 @@ func TestProcess(t *testing.T) {
 
 	for _, tc := range cases {
 		p := &Processor{Client: &mockHTTPClient{code: tc.code, resp: tc.resp}}
-		resp, err := p.Process([]byte{})
+		resp, err := p.Process(tc.name, []byte{})
 		if !reflect.DeepEqual(resp, tc.want) {
 			t.Errorf("%s: wanted response %#v, got %#v", tc.name, tc.want, resp)
 			t.Errorf("%s: wanted data %s, got %s", tc.name, string(tc.want.Data), string(resp.Data))

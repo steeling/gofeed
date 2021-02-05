@@ -69,7 +69,7 @@ func (p *testProcessor) Healthcheck(ctx context.Context) error {
 	return nil
 }
 
-func (p *testProcessor) Process(buf []byte) (*ProcessorResponse, error) {
+func (p *testProcessor) Process(id string, buf []byte) (*ProcessorResponse, error) {
 	d, err := objFromData(buf)
 
 	if err != nil {
