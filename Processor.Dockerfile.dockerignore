@@ -1,0 +1,6 @@
+# Everything but the go files
+*
+!go.mod
+!go.sum
+!examples/state_processor
+!internal

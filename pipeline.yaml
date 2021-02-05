@@ -1,0 +1,80 @@
+trigger: none
+
+pool:
+  vmImage: "ubuntu-18.04"
+
+jobs:
+  - job: golangci_lint
+    pool:
+      vmImage: 'ubuntu-18.04'
+    
+    variables:
+      GOBIN:  '$(GOPATH)/bin' # Go binaries path
+      GOROOT: '/usr/local/go1.15' # Go installation path
+      GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
+      modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
+    
+    steps:
+      - task: GoTool@0
+        inputs:
+          version: '1.15'
+
+      - script: |
+          set -e -x
+          go version
+          go get -u github.com/jstemmer/go-junit-report
+          go get github.com/axw/gocov/gocov
+          go get github.com/AlekSi/gocov-xml
+
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.2
+          curl https://cdn.shiftleft.io/download/sl > $(go env GOPATH)/bin/sl && chmod a+rx $(go env GOPATH)/bin/sl
+        displayName: 'Install Dependencies'
+
+      - script: |
+          set -e -x
+          $GOBIN/golangci-lint run --timeout 5m -v -E gofmt,bodyclose,rowserrcheck,misspell,golint,gosec,errorlint,exhaustive,exportloopref,sqlclosecheck,godot --skip-dirs=gopath/pkg/mod
+        displayName: 'Run Code Quality Checks'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+  - job: "go_build_and_test"
+    steps:
+      - checkout: self
+        clean: true
+      - task: GoTool@0
+        inputs:
+          version: '1.15'
+      - bash: |-
+          go test -v -race -count=1 ./...
+
+      - task: Bash@3
+        displayName: Docker Build
+        inputs:
+          targetType: 'inline'
+          script: DOCKER_BUILDKIT=1 docker build -f Processor.Dockerfile .
+
+  - job: 'Run_remaining_lints'
+    steps:
+
+    - task: UseRubyVersion@0
+      inputs:
+        versionSpec: '>= 2.4'
+        addToPath: true
+
+    - script: gem install mdl
+      displayName: 'Install markdown lint'
+
+    - script: mdl . -c .mdlrc
+      displayName: 'Run markdown lint'
+
+
+    # - task: Bash@3
+    #   displayName: run kube linter 
+    #   inputs:
+    #     targetType: 'inline'
+    #     script: |
+    #       echo Installing the kubelinter
+    #       KUBELINTERVERSION=0.1.3
+    #       DOWNLOAD=https://github.com/stackrox/kube-linter/releases/download/$KUBELINTERVERSION/kube-linter-linux.tar.gz
+    #       sudo wget -c $DOWNLOAD -O - | sudo tar -xz -C .
+    #       sudo ./kube-linter lint deploy/charts/dicom
+    #   continueOnError: true       
