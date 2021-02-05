@@ -27,6 +27,6 @@ func (p *Partition) Expired() bool {
 	return p.Until.Before(time.Now())
 }
 
-func (p *Partition) Active() bool {
-	return p.Status == Available && !p.Expired()
+func (p *Partition) InActive() bool {
+	return p.Status == Complete || p.Expired()
 }

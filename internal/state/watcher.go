@@ -16,6 +16,8 @@ var DefaultPollInterval = time.Second
 // MinLeaseDuration is the minimum amount of time to lease a partition for.
 var MinLeaseDuration = time.Second * 30
 
+var OverrideMinLeaseDuration = false
+
 // Watcher watches partitions, leases them, and calls out to processor to process items.
 type Watcher struct {
 	Processor
@@ -31,12 +33,12 @@ type Watcher struct {
 	// This is especially useful if you continuously add items to a partition with no checkpointing.
 	ManualCheckpoint bool
 	AutoClose        bool
+	LeaseInterval    time.Duration
+	LeaseDuration    time.Duration
 
-	itemQ         chan *Item
-	leases        map[string]*Partition
-	mu            sync.Mutex
-	LeaseInterval time.Duration
-	leaseDuration time.Duration
+	itemQ  chan *Item
+	leases map[string]*Partition
+	mu     sync.Mutex
 }
 
 // Start the watcher. Sets some defaults if not set.
@@ -54,9 +56,12 @@ func (w *Watcher) Start(ctx context.Context) {
 	if w.LeaseInterval == 0 {
 		w.LeaseInterval = 2 * w.PollInterval
 	}
-	w.leaseDuration = 2 * w.LeaseInterval
-	if w.leaseDuration < MinLeaseDuration {
-		w.leaseDuration = MinLeaseDuration
+	if w.LeaseDuration == 0 {
+		w.LeaseDuration = 2 * w.LeaseInterval
+	}
+	if w.LeaseDuration < MinLeaseDuration && !OverrideMinLeaseDuration {
+		glog.Warning("overriding lease duration to 30s, recommended minimum")
+		w.LeaseDuration = MinLeaseDuration
 	}
 
 	w.itemQ = make(chan *Item, w.BatchSize)
@@ -156,13 +161,13 @@ func (w *Watcher) watchPartition(ctx context.Context, p *Partition, wg *sync.Wai
 		}
 
 		p.Owner = w.OwnerID
-		p.Until = time.Now().Add(w.leaseDuration)
+		p.Until = time.Now().Add(w.LeaseDuration)
 		if !w.Save(ctx, p) {
 			glog.Errorf("error saving patition %s", p.ID)
 			return
 
 		}
-		if !p.Active() {
+		if p.InActive() {
 			glog.Warningf("partition no longer active %s", p.ID)
 			return
 		}
@@ -194,7 +199,7 @@ func (w *Watcher) processItem(ctx context.Context, i *Item) {
 		}
 	}()
 	glog.Infof("%s is processing object with ID: %s in partition: %s, s: %s", w.OwnerID, i.ID, i.PartitionID, i.Data)
-	resp, err := w.Process(i.Data)
+	resp, err := w.Process(i.ID, i.Data)
 	if err != nil {
 		i.error(err)
 		return

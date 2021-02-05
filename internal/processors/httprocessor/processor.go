@@ -59,7 +59,7 @@ type Processor struct {
 	HealthEndpoint string
 }
 
-func (h *Processor) Process(buf []byte) (*state.ProcessorResponse, error) {
+func (h *Processor) Process(id string, buf []byte) (*state.ProcessorResponse, error) {
 	resp, err := h.Client.Post(h.Target, "application/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
